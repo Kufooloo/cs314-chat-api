@@ -59,6 +59,19 @@ app.post(
   }
 );
 
+app.get("/chat/auth/login/:userName/:password", async function (req, res) {
+  const givenUserName = req.params.userName;
+  const givenPswd = req.params.password;
+
+  const response = await verifyCredentials(givenUserName, givenPswd);
+  if (response) {
+    res.status(200);
+    res.send(generateAccessToken(givenUserName));
+  } else {
+    res.sendStatus(401);
+  }
+});
+
 app.all("*", (req, res) => {
   res.send(req.params);
 });
@@ -102,16 +115,11 @@ async function createNewUser(userNameToCheck, passwordToCheck) {
   if (user == null) {
     createdDt = new Date();
 
-    generatedHash = salt = bcrypt.genSalt(saltRounds, (err, salt) => {
-      return bcrypt.hash(passwordToCheck, salt, (err, hash) => {
-        if (err) {
-          return;
-        }
-        console.log("Hashed Password:", hash);
-        return hash;
-      });
-    });
+    const salt = await bcrypt.genSalt(saltRounds);
+    const generatedHash = await bcrypt.hash(passwordToCheck, salt);
 
+    console.log("salt: ", salt);
+    console.log("hash: ", generatedHash);
     const doc = {
       timeCreated: createdDt,
       timeEdited: createdDt,
@@ -123,4 +131,29 @@ async function createNewUser(userNameToCheck, passwordToCheck) {
     return (await result).insertedId;
   }
   return 0;
+}
+
+async function verifyCredentials(givenUserName, givenPswd) {
+  const database = client.db("Cs314TermProjectDatabase");
+  const users = database.collection("users");
+
+  const query = { userName: givenUserName };
+  console.log(givenUserName);
+  const options = {
+    projection: { username: 1, passwordHash: 1 },
+  };
+
+  const user = await users.findOne(query, options);
+  console.log(user);
+
+  if (user != null) {
+    if (await bcrypt.compare(givenPswd, user.passwordHash)) {
+      console.log("username and password correct for ", givenUserName);
+      return true;
+    }
+    console.log("username valid but wrong password for ", givenUserName);
+    return false;
+  }
+  console.log("user does not exist for ", givenUserName);
+  return false;
 }
