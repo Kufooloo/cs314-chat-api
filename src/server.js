@@ -121,7 +121,7 @@ app.post("/message/:groupId/:content", authenticateToken, async (req, res) => {
       content: messageContent,
     };
     console.log("message sent to ", groupId.toString());
-    io.in("665e66c7be59581aaa3c8d83").emit("sendMessage", payload);
+    io.in(groupId.toString()).emit("sendMessage", payload);
     res.sendStatus(200);
   }
 });
