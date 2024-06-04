@@ -3,15 +3,23 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const { MongoClient } = require("mongodb");
-const bcrypt = require("bcrypt");
+const http = require("http");
 
-const saltRounds = 10;
+const userRoutes = require("./Routes/userRoutes.js");
+const groupRoutes = require("./Routes/groupRoutes.js");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
+const { authenticateToken } = require("./Middleware/auth");
 
 dotenv.config();
 process.env.TOKEN_SECRET;
+process.env.DATABASE_NAME;
+
+socket_dict = new Map();
 
 app.use(cors());
 
@@ -43,117 +51,110 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-app.post(
-  "/chat/auth/createUser/:userName/:password",
-  async function (req, res) {
-    const givenUserName = req.params.userName;
-    const givenPswd = req.params.password;
+app.use("/userRoutes", userRoutes);
+app.use("/groupRoutes", groupRoutes);
 
-    const response = await createNewUser(givenUserName, givenPswd);
-    if (response != 0) {
-      res.status(200);
-      res.send(generateAccessToken(givenUserName));
-    } else {
-      res.sendStatus(409);
-    }
-  }
-);
+io.on("connect", async (socket) => {
+  console.log("a user connected");
+  const token = socket.handshake.headers.token;
+  console.log(token);
 
-app.get("/chat/auth/login/:userName/:password", async function (req, res) {
-  const givenUserName = req.params.userName;
-  const givenPswd = req.params.password;
-
-  const response = await verifyCredentials(givenUserName, givenPswd);
-  if (response) {
-    res.status(200);
-    res.send(generateAccessToken(givenUserName));
-  } else {
-    res.sendStatus(401);
-  }
-});
-
-app.all("*", (req, res) => {
-  res.send(req.params);
-});
-
-app.listen(PORT, () => console.log(`Listening on ${PORT}`));
-
-function generateAccessToken(username) {
-  return jwt.sign(username, process.env.TOKEN_SECRET);
-}
-//example app.get(/#, authenticateToke, (req, res)
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-
-  if (token == null) return res.sendStatus(401);
-
-  jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
+  const username = jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
     console.log(err);
 
-    if (err) return res.sendStatus(403);
+    if (err) socket.disconnect();
 
-    req.user = user;
-
-    next();
+    return user;
   });
-}
-
-async function createNewUser(userNameToCheck, passwordToCheck) {
-  const database = client.db("Cs314TermProjectDatabase");
+  console.log(username);
+  const database = client.db(process.env.DATABASE_NAME);
   const users = database.collection("users");
 
-  const query = { userName: userNameToCheck };
-  console.log(userNameToCheck);
+  json = {};
+  const query = { userName: username };
   const options = {
-    projection: { username: 1 },
+    projection: { groups: 1 },
   };
 
   const user = await users.findOne(query, options);
-  console.log(user);
+  if (user == null) {
+    console.error("USER DOES NOT EXIST ", username);
+    return;
+  }
+  const groups = user.groups;
+  console.log(groups);
+  //groups
+  for (id in groups) {
+    socket.join(groups[id].toString());
+    console.log("joined group", groups[id].toString());
+  }
+  socket.join(user._id.toString());
+  console.log("joined user group ", user._id.toString());
+  socket_dict.set(username, socket);
+
+  socket.emit("test");
+
+  socket.on("disconnect", () => {
+    console.log(username, " disconnected");
+    socket_dict.delete(username);
+  });
+
+  socket.on("message", (arg) => {
+    console.log("message sent with", arg);
+  });
+});
+
+//code for messaging because I am too nervous to seperate this into seperate files and deal with io.
+
+app.post("/message/:groupId/:content", authenticateToken, async (req, res) => {
+  const messageContent = req.params.content;
+  const groupId = req.params.groupId;
+  const userName = req.username;
+
+  const result = await sendMessage(messageContent, groupId, userName);
+  if (result == null) {
+    res.sendStatus(400);
+  } else {
+    const payload = {
+      author: userName,
+      groupId: groupId,
+      content: messageContent,
+    };
+    console.log("message sent to ", groupId.toString());
+    io.in("665e66c7be59581aaa3c8d83").emit("sendMessage", payload);
+    res.sendStatus(200);
+  }
+});
+server.listen(PORT, () => {
+  console.log("listening on *:3000");
+});
+
+async function sendMessage(content, groupId, userName) {
+  const database = client.db(process.env.DATABASE_NAME);
+  console.log("databasename", process.env.DATABASE_NAME);
+  const users = database.collection("users");
+  const messages = database.collection("messages");
+
+  const query = { userName: userName };
+  const options = {
+    projection: { _id: 1 },
+  };
+  console.log("searching for user ", userName);
+  const user = await users.findOne(query, options);
 
   if (user == null) {
-    createdDt = new Date();
-
-    const salt = await bcrypt.genSalt(saltRounds);
-    const generatedHash = await bcrypt.hash(passwordToCheck, salt);
-
-    console.log("salt: ", salt);
-    console.log("hash: ", generatedHash);
-    const doc = {
-      timeCreated: createdDt,
-      timeEdited: createdDt,
-      userName: userNameToCheck,
-      passwordHash: generatedHash,
-      groups: [],
-    };
-    const result = users.insertOne(doc);
-    return (await result).insertedId;
+    return null;
   }
-  return 0;
-}
-
-async function verifyCredentials(givenUserName, givenPswd) {
-  const database = client.db("Cs314TermProjectDatabase");
-  const users = database.collection("users");
-
-  const query = { userName: givenUserName };
-  console.log(givenUserName);
-  const options = {
-    projection: { username: 1, passwordHash: 1 },
+  const dt = new Date();
+  const doc = {
+    author: user._id,
+    dateSent: dt,
+    groupId: new ObjectId(groupId),
+    content: content,
   };
-
-  const user = await users.findOne(query, options);
-  console.log(user);
-
-  if (user != null) {
-    if (await bcrypt.compare(givenPswd, user.passwordHash)) {
-      console.log("username and password correct for ", givenUserName);
-      return true;
-    }
-    console.log("username valid but wrong password for ", givenUserName);
-    return false;
+  const message_result = await messages.insertOne(doc);
+  if (message_result == null) {
+    return null;
   }
-  console.log("user does not exist for ", givenUserName);
-  return false;
+  return true;
 }
