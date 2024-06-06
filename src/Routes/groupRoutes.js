@@ -12,21 +12,52 @@ const client = new MongoClient(uri);
 var express = require("express"),
   router = express.Router();
 
+router.delete("/removeGroup/:groupId/", authenticateToken, async (req, res) => {
+  const userName = req.username;
+  const groupId = new ObjectId(req.params.groupId);
+  var io = req.app.get("socketio");
+
+  result_code = await removeGroup(groupId, userName);
+  if (result_code == 200) {
+    res.sendStatus(200);
+    return;
+  }
+  if (result_code == null || result_code == 404) {
+    res.sendStatus(404);
+    return;
+  }
+  if (result_code == 500) {
+    res.sendStatus(500);
+    return;
+  }
+  if (result_code == 401) {
+    res.sendStatus(401);
+    return;
+  }
+  for (user in result_code) {
+    io.to(result_code[user].toString()).emit(
+      "removedGroup",
+      groupId.toString()
+    );
+  }
+  res.sendStatus(200);
+});
 router.post(
   "/createGroup/:userName/:usersToAdd",
   authenticateToken,
   async (req, res) => {
+    const givenUserName = req.username;
+    const UsersToAdd = JSON.parse(req.params.usersToAdd);
+
     const database = client.db(process.env.DATABASE_NAME);
     const users = database.collection("users");
-    const query = { userName: userName };
+    const query = { userName: givenUserName };
     const options = {
       projection: { _id: 1 },
     };
 
     var io = req.app.get("socketio");
 
-    const givenUserName = req.params.userName;
-    const UsersToAdd = JSON.parse(req.params.usersToAdd);
     console.log(UsersToAdd);
     result = await createGroup(givenUserName);
     var user = await users.findOne(query, options);
@@ -41,7 +72,7 @@ router.post(
       if (return_status == null) {
         console.error("failed to add user ", UsersToAdd.users[user]);
       } else {
-        io.to(result_status.toString()).emit("newGroup", result_status);
+        io.to(return_status.toString()).emit("newGroup", return_status);
       }
     }
 
@@ -166,6 +197,7 @@ async function addUserToGroup(userName, groupId) {
   const user = await users.findOne(query, options);
 
   if (user == null) {
+    console.log("usernotfound");
     return null;
   }
   const result_user = await users.updateOne(
@@ -184,5 +216,54 @@ async function addUserToGroup(userName, groupId) {
   }
 
   return user._id;
+}
+
+async function removeGroup(groupId, userName) {
+  const database = client.db(process.env.DATABASE_NAME);
+  const groups = database.collection("groups");
+  const users = database.collection("users");
+
+  const query = { userName: userName };
+
+  const options = {
+    projection: { username: 1, groups: 1, _id: 1 },
+  };
+
+  const user = await users.findOne(query, options);
+  console.log(user);
+  console.log(groupId);
+  if (user == null) {
+    console.log("usernotfound or group is not in users group list");
+    return null;
+  }
+
+  const g_query = { _id: groupId };
+
+  const g_options = {
+    projection: { owner: 1, users: 1 },
+  };
+
+  const group = await groups.findOne(g_query, g_options);
+  if (group == null) {
+    return 404;
+  }
+
+  console.log(group);
+
+  if (group.owner.toString() != user._id.toString()) {
+    return 401;
+  }
+  console.log("attempting to delete group");
+  await groups.findOneAndDelete(g_query, options);
+  const remove_result = await users.findOneAndUpdate(
+    { _id: user._id },
+    { $pull: { groups: groupId } }
+  );
+  if (remove_result == null) {
+    console.log("error removing group from user");
+    return 500;
+  }
+  console.log(group);
+  return group.users;
 }
 module.exports = router;
