@@ -22,6 +22,7 @@ process.env.DATABASE_NAME;
 socket_dict = new Map();
 
 app.use(cors());
+app.set("socketio", io);
 
 //uri = process.env.URI;
 uri =
@@ -102,6 +103,9 @@ io.on("connect", async (socket) => {
   socket.on("message", (arg) => {
     console.log("message sent with", arg);
   });
+  socket.on("new message", (arg) => {
+    console.log("message recieved", arg);
+  });
 });
 
 //code for messaging because I am too nervous to seperate this into seperate files and deal with io.
@@ -125,6 +129,7 @@ app.post("/message/:groupId/:content", authenticateToken, async (req, res) => {
     res.sendStatus(200);
   }
 });
+
 server.listen(PORT, () => {
   console.log("listening on *:3000");
 });

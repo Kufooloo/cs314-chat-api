@@ -16,15 +16,32 @@ router.post(
   "/createGroup/:userName/:usersToAdd",
   authenticateToken,
   async (req, res) => {
+    const database = client.db(process.env.DATABASE_NAME);
+    const users = database.collection("users");
+    const query = { userName: userName };
+    const options = {
+      projection: { _id: 1 },
+    };
+
+    var io = req.app.get("socketio");
+
     const givenUserName = req.params.userName;
     const UsersToAdd = JSON.parse(req.params.usersToAdd);
     console.log(UsersToAdd);
     result = await createGroup(givenUserName);
+    var user = await users.findOne(query, options);
+    if (result == null) {
+      res.sendStatus(400);
+      return;
+    }
+    io.to(user._id.toString()).to("test").emit("newGroup", result);
     for (user in UsersToAdd.users) {
       console.log(UsersToAdd.users[user]);
       return_status = await addUserToGroup(UsersToAdd.users[user], result);
       if (return_status == null) {
         console.error("failed to add user ", UsersToAdd.users[user]);
+      } else {
+        io.to(result_status.toString()).emit("newGroup", result_status);
       }
     }
 
