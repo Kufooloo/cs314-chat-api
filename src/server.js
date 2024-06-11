@@ -14,6 +14,7 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 const { authenticateToken } = require("./Middleware/auth");
+const { group } = require("console");
 
 dotenv.config();
 process.env.TOKEN_SECRET;
@@ -23,6 +24,7 @@ socket_dict = new Map();
 
 app.use(cors());
 app.set("socketio", io);
+app.set("socketlist", socket_dict);
 
 //uri = process.env.URI;
 uri =
@@ -91,13 +93,11 @@ io.on("connect", async (socket) => {
   }
   socket.join(user._id.toString());
   console.log("joined user group ", user._id.toString());
-  socket_dict.set(username, socket);
-
-  socket.emit("test");
+  socket_dict.set(user._id.toString(), socket);
 
   socket.on("disconnect", () => {
     console.log(username, " disconnected");
-    socket_dict.delete(username);
+    socket_dict.delete(user._id.toString());
   });
 
   socket.on("message", (arg) => {
@@ -118,6 +118,8 @@ app.post("/message/:groupId/:content", authenticateToken, async (req, res) => {
   const result = await sendMessage(messageContent, groupId, userName);
   if (result == null) {
     res.sendStatus(400);
+  } else if (result == 404) {
+    res.sendStatus(404);
   } else {
     const payload = {
       author: userName,
@@ -138,6 +140,7 @@ async function sendMessage(content, groupId, userName) {
   const database = client.db(process.env.DATABASE_NAME);
   console.log("databasename", process.env.DATABASE_NAME);
   const users = database.collection("users");
+  const groups = database.collection("groups");
   const messages = database.collection("messages");
 
   const query = { userName: userName };
@@ -149,6 +152,10 @@ async function sendMessage(content, groupId, userName) {
 
   if (user == null) {
     return null;
+  }
+  const group = await groups.findOne({ _id: new ObjectId(groupId) });
+  if (group == null) {
+    return 404;
   }
   const dt = new Date();
   const doc = {

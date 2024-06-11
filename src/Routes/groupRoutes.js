@@ -57,6 +57,7 @@ router.post(
     };
 
     var io = req.app.get("socketio");
+    var socketlist = req.app.get("socketlist");
 
     console.log(UsersToAdd);
     result = await createGroup(givenUserName);
@@ -65,15 +66,33 @@ router.post(
       res.sendStatus(400);
       return;
     }
-    io.to(user._id.toString()).to("test").emit("newGroup", result);
-    for (user in UsersToAdd.users) {
-      console.log(UsersToAdd.users[user]);
-      return_status = await addUserToGroup(UsersToAdd.users[user], result);
-      if (return_status == null) {
-        console.error("failed to add user ", UsersToAdd.users[user]);
-      } else {
-        io.to(return_status.toString()).emit("newGroup", return_status);
+    var users_added = [];
+    users_added.push(user._id);
+    for (x in UsersToAdd.users) {
+      if (UsersToAdd.users[x] != givenUserName) {
+        console.log(UsersToAdd.users[x]);
+        return_status = await addUserToGroup(UsersToAdd.users[x], result);
+        if (return_status == null) {
+          console.error("failed to add user ", UsersToAdd.users[x]);
+        } else {
+          users_added.push(return_status);
+        }
       }
+    }
+    console.log(users_added);
+    for (x in users_added) {
+      console.log("sent to ", users_added[x]);
+
+      if (socketlist.get(users_added[x].toString())) {
+        console.log(users_added[x]);
+        console.log(socketlist);
+        var socket = socketlist.get(users_added[x].toString());
+        console.log(socket);
+        console.log("adding user to ", result.toString());
+
+        socket.join(result.toString());
+      }
+      io.to(users_added[x].toString()).emit("newGroup", users_added, result);
     }
 
     console.log(result);
