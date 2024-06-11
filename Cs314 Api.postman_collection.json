@@ -1,0 +1,342 @@
+{
+	"info": {
+		"_postman_id": "22e843a2-0801-4e87-b0ae-720e44d505f5",
+		"name": "Cs314 Api",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "35325841"
+	},
+	"item": [
+		{
+			"name": "createUser",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3001/userRoutes/createUser/:userName/:password/:profilePicLink",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"userRoutes",
+						"createUser",
+						":userName",
+						":password",
+						":profilePicLink"
+					],
+					"variable": [
+						{
+							"key": "userName",
+							"value": "jonah"
+						},
+						{
+							"key": "password",
+							"value": "password"
+						},
+						{
+							"key": "profilePicLink",
+							"value": "test"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "loginUser",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http:/https://stingray-app-seevi.ondigitalocean.app/userRoutes/login/:userName/:password",
+					"protocol": "http:/https",
+					"host": [
+						"stingray-app-seevi",
+						"ondigitalocean",
+						"app"
+					],
+					"path": [
+						"userRoutes",
+						"login",
+						":userName",
+						":password"
+					],
+					"variable": [
+						{
+							"key": "userName",
+							"value": "xin21"
+						},
+						{
+							"key": "password",
+							"value": "xin123"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "createGroup",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiJ9.dGVzdCB1c2Vy.W68kcRsW96nVBnohtUkZ_FT0goQSflkPRReb7By2o-M",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3001/groupRoutes/createGroup/:userName/:usersToAdd",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"groupRoutes",
+						"createGroup",
+						":userName",
+						":usersToAdd"
+					],
+					"variable": [
+						{
+							"key": "userName",
+							"value": "test user"
+						},
+						{
+							"key": "usersToAdd",
+							"value": "{\"users\":[ \"blade\", \"arlan\", \"fakenamefr\", \"test user\"]}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Send Message",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiJ9.aGVydGE.sPWQ5qPDM_SMxiW6vjnzFenXO4IbuFvAPaPw6pqwpk8",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "localhost:3001/message/:groupId/:content",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"message",
+						":groupId",
+						":content"
+					],
+					"variable": [
+						{
+							"key": "groupId",
+							"value": "665e66c7be59581aaa3c8d83"
+						},
+						{
+							"key": "content",
+							"value": "Test"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Messages",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiJ9.aGVydGE.sPWQ5qPDM_SMxiW6vjnzFenXO4IbuFvAPaPw6pqwpk8",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:3001/groupRoutes/message/:groupId/",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"groupRoutes",
+						"message",
+						":groupId",
+						""
+					],
+					"variable": [
+						{
+							"key": "groupId",
+							"value": "665e66c7be59581aaa3c8d83"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Chatrooms",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiJ9.aGVydGEy.0qrxMm4dekz3uc1Lx0N2-ABOIA0ijXkE9S9GxFOZVlk",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:3001/groupRoutes/chatroom",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"groupRoutes",
+						"chatroom"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Remove Group",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiJ9.am9uYWg.tCXd7J-Bl2ht05eNO2sjyjlJ8Zj7g2yAsKqAqjAs_KM",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3001/groupRoutes/removeGroup/:groupId",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"groupRoutes",
+						"removeGroup",
+						":groupId"
+					],
+					"variable": [
+						{
+							"key": "groupId",
+							"value": "6661415a178060b0e27c5c93"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "eyJhbGciOiJIUzI1NiJ9.aGVydGE.sPWQ5qPDM_SMxiW6vjnzFenXO4IbuFvAPaPw6pqwpk8",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"value": "",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "userName",
+			"value": "herta2"
+		},
+		{
+			"key": "passWord",
+			"value": "hertatest2"
+		},
+		{
+			"key": "profileLink",
+			"value": "{{$randomCity}}.com"
+		},
+		{
+			"key": "authToken",
+			"value": "authToken"
+		}
+	]
+}
