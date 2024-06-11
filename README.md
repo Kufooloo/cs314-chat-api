@@ -7,8 +7,8 @@ This is the back end for the group chat app I wrote for CS314 intro to software 
 Copy the contents of the directory onto your machine.
 Create a new file called .env in your directory. This file needs two things.
 
-TOKEN_SECRET=EB4qAj0oixqv6MKHE2ER7dy7MCGWRITB
-DATABASE_NAME="Cs314TermProjectDatabase"
+TOKEN_SECRET=EB4qAj0oixqv6MKHE2ER7dy7MCGWRITB  
+DATABASE_NAME="Cs314TermProjectDatabase"  
 
 The TOKEN_SECRET is used to authenticate and create JWT. This can be anything but it must match when comparing. 
 DATABASE_NAME is the name of the database to be written to in mongodb. This can be anything, but CS314TermProjectDatabase is what we used. 
